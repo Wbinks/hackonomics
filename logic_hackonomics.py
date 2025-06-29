@@ -1,17 +1,14 @@
-from pygame_functions import *
 import random
 
 class Buyer:
     def __init__(self,maximum_price,local_price):
         self.maximum_price = maximum_price
         self.local_price = local_price
-        self.traded = False
 
 class Seller:
     def __init__(self,minimum_price,local_price):
         self.minimum_price = minimum_price
         self.local_price = local_price
-        self.traded = False
 
 def product_category(option):
     #This array holds the lower/upper bounds of the price and the incrementations. 
@@ -101,13 +98,13 @@ def agent_to_agent(buyer_array,seller_array):
     cseller_array = seller_array
 
     for i in range(num_of_iterations):
+        random.shuffle(cbuyer_array)
+        random.shuffle(cseller_array)
         pos = random.randint(0,max)
         buyer_seller_dict[cbuyer_array[pos]] = cseller_array[pos]
         cbuyer_array.pop(pos)
         cseller_array.pop(pos)
         max = max - 1
-        random.shuffle(cbuyer_array)
-        random.shuffle(cseller_array)
 
     
     return buyer_seller_dict
@@ -115,7 +112,7 @@ def agent_to_agent(buyer_array,seller_array):
 
 
 #this disects the dictionary back into the prices of the buyers and sellers in numbers
-def transaction(some_dictionary,increment):
+def transaction(some_dictionary,increment,accurate_equilibrium):
     global local_buyer_prices 
     global local_seller_prices
     local_buyer_prices = []
@@ -139,14 +136,16 @@ def transaction(some_dictionary,increment):
         local_buyer_prices.append(buyer.local_price)
         local_seller_prices.append(seller.local_price)
         
-    print("Number of trades:",number_of_trades_today)
-    
     if number_of_trades_today != 0:
         new_equilibrium = int((sum(trade_prices) / number_of_trades_today))
     else:
         new_equilibrium = 0
-    print(*trade_prices)
-    print(new_equilibrium)
+    
+    if not accurate_equilibrium:
+        print("Number of trades:",number_of_trades_today)
+        print(*trade_prices)
+        print(new_equilibrium)
+
     new_equilibrium_prices.append(new_equilibrium)
 
 num_of_buyers = int(input("How many buyers are there: "))
@@ -184,18 +183,19 @@ while days_of_trade < 20:
     print()
     print(f"Day {days_of_trade}")
     print()
-    transaction(buyer_seller_dictionary,incremental_price)
+    transaction(buyer_seller_dictionary,incremental_price,False)
 
 while 0 in new_equilibrium_prices: 
     new_equilibrium_prices.remove(0)
 
 print(*new_equilibrium_prices)
+print(f"Rough Equilibrium {new_equilibrium_prices[-1]}")
 
 ########################### The following simulates an accurate equilibrium #################################################
 eq_scaled_agents = accurate_equilibrium(num_of_buyers,num_of_sellers)
 
-max_prices_buyers = price_setter(1,num_of_buyers,lower_price,upper_price,equilibrium_price)
-min_prices_sellers = price_setter(2,num_of_sellers,lower_price,upper_price,equilibrium_price)
+max_prices_buyers = price_setter(1,eq_scaled_agents[0],lower_price,upper_price,equilibrium_price)
+min_prices_sellers = price_setter(2,eq_scaled_agents[1],lower_price,upper_price,equilibrium_price)
 
 days_of_trade = 0
 new_equilibrium_prices = []
@@ -207,12 +207,10 @@ while days_of_trade < 20:
     seller_objects = price_to_agent(2,min_prices_sellers,local_seller_prices)
     buyer_seller_dictionary = agent_to_agent(buyer_objects,seller_objects)
     days_of_trade += 1
-    transaction(buyer_seller_dictionary,incremental_price)
+    transaction(buyer_seller_dictionary,incremental_price,True)
 
 while 0 in new_equilibrium_prices: 
     new_equilibrium_prices.remove(0)
 
 new_equilibrium = new_equilibrium_prices[-1]
 print(f"Accurate equilibrium: {new_equilibrium}")
-
-
