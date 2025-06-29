@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import math
 import numpy as np
 import random
@@ -8,8 +7,6 @@ from pygame_functions import *
 from sys import exit
 import time
 
-
-
 greater_text = ["""In this simulation, there are more buyers than sellers in the market. This causes demand to shift to the right (from D1 to D2) as the demographic for the product increases. However, at P1, this causes a disequilibrium in the market.""",
                     """Activity: Copy the graph and trace from the dotted line P1 to the new demand curve. Then trace down and find the new quantity demanded (label Q3).""",
                     """The diagram shows excess demand, where quantity demanded (Q3) exceeds quantity supplied (Q1), pushing the price up from P1 to P2. This higher price encourages producers to increase supply (Q1 -> Q2) and discourages some consumers (Q3 -> Q2), leading to a new equilibrium at P2Q2 where resources are allocated more efficiently.""",
@@ -18,7 +15,7 @@ smaller_text = ["In this simulation, there are more sellers than buyers in the m
                 "Activity: Copy the graph and trace from the dotted line P1 to the new supply curve. Then trace down and find the new quantity supplied (label Q3).",
                 "Supply (Q3) is higher than demand (Q1), causing prices to fall from P1 to P2 as sellers clear excess stock. Lower prices make producers reduce supply (Q3 -> Q2) and encourage more buyers (Q1 -> Q2), leading to a new market equilibrium at price P2 and quantity Q2."]
 
-same_text = ["In this simulation, there are the same amount of sellers and buyers in the market. This means that the price remains constant at P1, not changing."]
+same_text = ["In this simulation, there are the same amount of sellers and buyers in the market. This means that the price remains constant at P1, not changing. (it may change slightly in this simulation as this is a rough equilibrium calculator)"]
 product = Slider(860,450,200,1,4)
 seller_slider = Slider(1110,725,200,1,10)
 buyer_slider = Slider(610,725,200,1,10)
@@ -170,7 +167,7 @@ class Buyer:
                         seller = self.stall_seller_map.get(stall_idx)
     
                         if seller :
-                            transaction({self: seller}, 5, True)  
+                            transaction({self: seller}, 5, True, market_pressure)  
                             print(f"Trade occurred at stall {stall_idx}")
 
                             self.transaction_done = True  
@@ -211,7 +208,6 @@ class Buyer:
         elif direction == 1:
             surface.blit(person_surface_scaled_right,self.rect)
 
-
 def product_category(option):
     #This array holds the lower/upper bounds of the price and the incrementations. 
     price_increment_bound_array = [[100,1000,50],[10000,20000,100],[10,100,5],[20,200,10]]
@@ -237,7 +233,6 @@ def price_equilibrium(lower_bound,upper_bound):
     tbuyer_array.sort()
     median = int((tseller_array[50] + tseller_array[50]) / 2)
     return median
-
 
 #This simulates how it'd actually be like with many buyers and many sellers
 def accurate_equilibrium(num_of_buyers,num_of_sellers):
@@ -266,7 +261,6 @@ def price_setter(type_of_agent,agents,lower_bound,upper_bound,equilibrium):
     
     return agents_array
 
-
 #This allocates the prices from the price setter functions to respective objects 
 #buyer_objects hold the array of objects with maximum prices
 #seller_objects hold the array of objects with minimum prices
@@ -275,7 +269,7 @@ def price_to_agent(type_of_agent,price_array,local_price_array):
     seller_array = []
     for price in price_array:
         if type_of_agent == 1:
-            buyer_array.append(Buyer(stall_rect[:len(price_array)], 1120, 815, 8, price, price, stall_seller_map))
+            buyer_array.append(Buyer(stall_rect[:len(price_array)], 1120, 815, 8, price, price, stall_seller_map=None))
         elif type_of_agent == 2: #This is for a seller
             seller_array.append(Seller(price,price))
 
@@ -297,7 +291,7 @@ def agent_to_agent(buyer_array,seller_array):
     buyer_seller_dict = {}
     num_of_iterations = min(len(buyer_array),len(seller_array))
     max = num_of_iterations - 1
-    #these are the copies of the respective arrays so original isn't overwritten
+    
     cbuyer_array = buyer_array
     cseller_array = seller_array
 
@@ -308,16 +302,11 @@ def agent_to_agent(buyer_array,seller_array):
         buyer_seller_dict[cbuyer_array[pos]] = cseller_array[pos]
         cbuyer_array.pop(pos)
         cseller_array.pop(pos)
-        max = max - 1
-        
-
-    
+        max = max - 1  
     return buyer_seller_dict
 
-
-
 #this disects the dictionary back into the prices of the buyers and sellers in numbers
-def transaction(some_dictionary,increment, accurate_equilibrium):
+def transaction(some_dictionary,increment, accurate_equilibrium, market_pressure):
     global local_buyer_prices 
     global local_seller_prices
     global number_of_trades_today
@@ -325,26 +314,39 @@ def transaction(some_dictionary,increment, accurate_equilibrium):
     global trades_completed
 
     for buyer, seller in some_dictionary.items():
-
-        if buyer.local_price >= seller.local_price: #condition for a trade occuring
-            trade_price = int((buyer.local_price + seller.local_price) / 2) #transact in the middle
-            buyer.local_price = min(buyer.maximum_price, buyer.local_price - increment)
-            seller.local_price = max(seller.minimum_price, seller.local_price + increment)
-            number_of_trades_today += 1 
+        trade_price = 0
+        if buyer.local_price >= seller.local_price:
+            trade_price = int((buyer.local_price + seller.local_price) / 2)
+            number_of_trades_today += 1
             trades_completed += 1
-            
-            
+
+            if market_pressure == "demand":
+                # Demand > Supply
+                buyer.local_price = max(seller.local_price, buyer.local_price - increment )
+                seller.local_price = min(buyer.local_price, seller.local_price + increment )
+            elif market_pressure == "supply":
+                # Supply > Demand
+                buyer.local_price = max(seller.local_price, buyer.local_price - increment * 2)
+                seller.local_price = max(seller.minimum_price, seller.local_price - increment * 2)
+            else:
+                # Balanced market
+                buyer.local_price = max(seller.local_price, buyer.local_price - increment // 2)
+                seller.local_price = min(seller.minimum_price + increment, seller.local_price + increment // 2)
         else:
-            trade_price = 0
-            buyer.local_price = min(buyer.maximum_price, buyer.local_price + increment)
-            seller.local_price = max(seller.minimum_price, seller.local_price - increment)
-        
-        
+            # Trade failed
+            if market_pressure == "demand":
+                buyer.local_price = min(buyer.maximum_price, buyer.local_price + increment)
+                seller.local_price = max(seller.minimum_price, seller.local_price - increment)
+            elif market_pressure == "supply":
+                buyer.local_price = max(seller.local_price, buyer.local_price - increment * 2)
+                seller.local_price = max(seller.minimum_price, seller.local_price - increment * 2)
+            else:
+                buyer.local_price = buyer.local_price  
+                seller.local_price = seller.local_price 
+
         trade_prices.append(trade_price)
         local_buyer_prices.append(buyer.local_price)
         local_seller_prices.append(seller.local_price)
-        
-    #print("Number of trades:",number_of_trades_today)
     
     if number_of_trades_today != 0:
         print(trade_prices)
@@ -398,9 +400,6 @@ def sim_display(now):
         screen.blit(lessBuyers_scaled,(1280,0))
         display_text(screen, smaller_text[now], (1280,600), explanation_font, "black",typing_index)
 
-
-
-
 def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
     global menu
     global greater
@@ -419,6 +418,13 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
     global local_buyer_prices
     global local_seller_prices
     global typing_index
+    global initial_equilibrium_price
+    global market_pressure
+    lower_price = product_category(type_of_product)[0]
+    upper_price = product_category(type_of_product)[1]
+    incremental_price = product_category(type_of_product)[2]
+    equilibrium_price = price_equilibrium(lower_price,upper_price)
+    initial_equilibrium_price = equilibrium_price
     typing_index = 0
     trade_prices = []
     number_of_trades_today = 0
@@ -439,42 +445,30 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
     seagull_returning = True
     if num_Of_Buyers > num_Of_Sellers:
         greater = True
+        market_pressure = "demand"
     elif num_Of_Buyers == num_Of_Sellers:
         same = True
+        market_pressure = "equal"
     elif num_Of_Buyers < num_Of_Sellers:
         smaller = True
+        market_pressure = "supply"
 
     new_equilibrium_prices = [0]
 
-    lower_price = product_category(type_of_product)[0]
-    upper_price = product_category(type_of_product)[1]
-    incremental_price = product_category(type_of_product)[2]
-
-    equilibrium_price = price_equilibrium(lower_price,upper_price)
     eq_scaled_agents = accurate_equilibrium(num_Of_Buyers,num_Of_Sellers)
-
-    buyer_lower_bound = max(lower_price, math.floor(equilibrium_price * 0.9))
-    max_prices_buyers = []
-    for _ in range(eq_scaled_agents[0]):
-        price = random.randint(buyer_lower_bound, upper_price)
-        max_prices_buyers.append(price)
-
-    # Sellers: from lower bound up to equilibrium as before
-    min_prices_sellers = []
-    for _ in range(eq_scaled_agents[1]):
-        price = random.randint(lower_price, equilibrium_price)
-        min_prices_sellers.append(price)
-        
-    days_of_trade = 0
+    if num_Of_Buyers > num_Of_Sellers:
+        buyer_bias = int(equilibrium_price * 0.1)  # increase buyer price floor
+        new_lower = min(equilibrium_price + buyer_bias, upper_price)
+        max_prices_buyers = [random.randint(new_lower, upper_price) for _ in range(eq_scaled_agents[0])]
+    else:
+        max_prices_buyers = price_setter(1, eq_scaled_agents[0], lower_price, upper_price, equilibrium_price)
+    min_prices_sellers = price_setter(2,eq_scaled_agents[1],lower_price,upper_price,equilibrium_price)
     
     local_buyer_prices = []
     local_seller_prices = []
 
-    
-
     sellers = price_to_agent(2, min_prices_sellers, local_seller_prices)
     stall_seller_map = {i: sellers[i] for i in range(num_Of_Sellers)}
-
 
     buyers = []
     for i in range(num_Of_Buyers):
@@ -521,11 +515,6 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
             if all_done:
                 simulation_done = True
 
-
-
-
-
-
         screen.blit(right_surface, (1220, 0))
         screen.blit(black_vertical_line, (1220, 0))
         screen.blit(black_horizontal_line, (1220, 540))
@@ -536,6 +525,11 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
         eq_price_text = trades_font.render("Current Equilibrium Price: "+ str(new_equilibrium_prices[-1]),True,"brown")
         eq_price_text_rect = eq_price_text.get_rect(bottomright = (1150,100))
 
+        price_change = new_equilibrium_prices[-1] - initial_equilibrium_price
+        price_change_text = trades_font.render("Price Change: " + str(price_change), True, "brown")
+        price_change_rect = price_change_text.get_rect(bottomright=(1150, 150))
+
+        screen.blit(price_change_text, price_change_rect)
 
         screen.blit(trades_completed_text,trades_completed_text_rect)
         screen.blit(eq_price_text,eq_price_text_rect)
@@ -566,8 +560,7 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
             for button in [next_button]:
                 button.changeColor(mouse)
                 button.update(screen)
-        
-        
+            
         sim_display(now)
 
         for event in pygame.event.get():
@@ -657,90 +650,3 @@ def main_menu():
 
 main_menu()
 
-#eq_scaled_agents = accurate_equilibrium(num_Of_Buyers,num_Of_Sellers)
-
-#max_prices_buyers = price_setter(1,eq_scaled_agents[0],lower_price,upper_price,equilibrium_price)
-#min_prices_sellers = price_setter(2,eq_scaled_agents[1],lower_price,upper_price,equilibrium_price)
-
-#days_of_trade = 0
-#new_equilibrium_prices = []
-
-#local_buyer_prices = []
-#local_seller_prices = []
-#while days_of_trade < 20:
-#    buyer_objects = price_to_agent(1,max_prices_buyers,local_buyer_prices)
-#    seller_objects = price_to_agent(2,min_prices_sellers,local_seller_prices)
-#    buyer_seller_dictionary = agent_to_agent(buyer_objects,seller_objects)
- #   days_of_trade += 1
-#    transaction(buyer_seller_dictionary,incremental_price,True)
-
-#while 0 in new_equilibrium_prices: 
-#    new_equilibrium_prices.remove(0)
-
-#new_equilibrium = new_equilibrium_prices[-1]
-#print(f"Accurate equilibrium: {new_equilibrium}")
-
-#########################################################################
-
-
-
-
-
-
-#if (num_Of_Buyers or num_Of_Sellers) > 10 or (num_Of_Buyers or num_Of_Sellers) <= 0:
-#    print("Error")
-
-
-#incremental_price = product_category(type_of_product)[2]
-
-#the arrays containing the random maximum/minimum prices: THIS WORKS
-
-
-
-#arrays of objects: THIS WORKS
-
-
-#initial arrays of buyer and seller objects with maximum and minimum prices assigned
-
-
-#while days_of_trade < 1000:
-   #buyer_objects = price_to_agent(1,max_prices_buyers,local_buyer_prices)
-    #seller_objects = price_to_agent(2,min_prices_sellers,local_seller_prices)
-    #buyer_seller_dictionary = agent_to_agent(buyer_objects,seller_objects)
-    #days_of_trade += 1
-    #print()
-    #print(f"Day {days_of_trade}")
-    #print()
-   # transaction(buyer_seller_dictionary,incremental_price)
-
-#print(*new_equilibrium_prices)
-
-
-
-
-#########################################################################################################
-
-
-
-
-#q1 = random.randint(60,80)
-#m1 = random.uniform(0.5,1.0)
-#print("q1: ",q1,"p1: ",m1)
-#q2 = 0
-#m2 = random.uniform(0.5,1.0)
-#print("q2: ",q2,"p2: ",m2)
-#buyers = Buyers(q1,m1)
-#sellers = Sellers(q2,m2)
-
-#eq_qty, eq_price = find_equilibrium(buyers,sellers)
-#demand_qty, demand_price = buyers.demand_points()
-#supply_qty, supply_price = sellers.supply_points()
-#plt.plot(demand_qty,demand_price)
-#plt.plot(demand_qty+20,demand_price+20) #shifts it to right
-#plt.plot(supply_qty,supply_price)
-#plt.xlim(0,100)
-#plt.ylim(0,100)
-#plt.xlabel("Quantity")
-#plt.ylabel("Price")
-#plt.title("Supply and Demand")
-#plt.show()
