@@ -39,6 +39,20 @@ def price_equilibrium(lower_bound,upper_bound):
     median = int((tseller_array[50] + tseller_array[50]) / 2)
     return median
 
+#This simulates how it'd actually be like with many buyers and many sellers
+def accurate_equilibrium(num_of_buyers,num_of_sellers):
+    if num_of_buyers == num_of_sellers:
+        eq_num_of_buyers = 1000
+        eq_num_of_sellers = 1000
+    elif num_of_buyers > num_of_sellers:
+        eq_num_of_buyers = int((1000 / num_of_sellers) * num_of_buyers)
+        eq_num_of_sellers = 1000
+    else:
+        eq_num_of_sellers = int((1000 / num_of_buyers) * num_of_sellers)
+        eq_num_of_buyers = 1000
+
+    return [eq_num_of_buyers,eq_num_of_sellers]
+
 #This assigns random prices between an upper and lower bound for buyers/sellers
 #max_prices_buyers holds the maximum prices of the buyers
 #min_prices_sellers holds the minimum prices for the sellers
@@ -125,18 +139,19 @@ def transaction(some_dictionary,increment):
         local_buyer_prices.append(buyer.local_price)
         local_seller_prices.append(seller.local_price)
         
-    #print("Number of trades:",number_of_trades_today)
+    print("Number of trades:",number_of_trades_today)
     
     if number_of_trades_today != 0:
         new_equilibrium = int((sum(trade_prices) / number_of_trades_today))
     else:
         new_equilibrium = 0
-    #print(*trade_prices)
-    #print(new_equilibrium)
+    print(*trade_prices)
+    print(new_equilibrium)
     new_equilibrium_prices.append(new_equilibrium)
 
 num_of_buyers = int(input("How many buyers are there: "))
 num_of_sellers = int(input("How many sellers are there: "))
+
 if (num_of_buyers or num_of_sellers) > 10 or (num_of_buyers or num_of_sellers) <= 0:
     print("Error")
 type_of_product = int(input("Would you like to buy \n 1) iPads \n 2) Cars \n 3) Toys \n 4) Jackets "))
@@ -146,12 +161,14 @@ incremental_price = product_category(type_of_product)[2]
 
 #the arrays containing the random maximum/minimum prices: THIS WORKS
 equilibrium_price = price_equilibrium(lower_price,upper_price)
+
+
 max_prices_buyers = price_setter(1,num_of_buyers,lower_price,upper_price,equilibrium_price)
 min_prices_sellers = price_setter(2,num_of_sellers,lower_price,upper_price,equilibrium_price)
 print(*max_prices_buyers)
 print(*min_prices_sellers)
 print(equilibrium_price)
-#arrays of objects: THIS WORKS
+
 days_of_trade = 0
 new_equilibrium_prices = []
 
@@ -159,14 +176,43 @@ new_equilibrium_prices = []
 
 local_buyer_prices = []
 local_seller_prices = []
-while days_of_trade < 1000:
+while days_of_trade < 20:
     buyer_objects = price_to_agent(1,max_prices_buyers,local_buyer_prices)
     seller_objects = price_to_agent(2,min_prices_sellers,local_seller_prices)
     buyer_seller_dictionary = agent_to_agent(buyer_objects,seller_objects)
     days_of_trade += 1
-    #print()
-    #print(f"Day {days_of_trade}")
-    #print()
+    print()
+    print(f"Day {days_of_trade}")
+    print()
     transaction(buyer_seller_dictionary,incremental_price)
 
+while 0 in new_equilibrium_prices: 
+    new_equilibrium_prices.remove(0)
+
 print(*new_equilibrium_prices)
+
+########################### The following simulates an accurate equilibrium #################################################
+eq_scaled_agents = accurate_equilibrium(num_of_buyers,num_of_sellers)
+
+max_prices_buyers = price_setter(1,num_of_buyers,lower_price,upper_price,equilibrium_price)
+min_prices_sellers = price_setter(2,num_of_sellers,lower_price,upper_price,equilibrium_price)
+
+days_of_trade = 0
+new_equilibrium_prices = []
+
+local_buyer_prices = []
+local_seller_prices = []
+while days_of_trade < 20:
+    buyer_objects = price_to_agent(1,max_prices_buyers,local_buyer_prices)
+    seller_objects = price_to_agent(2,min_prices_sellers,local_seller_prices)
+    buyer_seller_dictionary = agent_to_agent(buyer_objects,seller_objects)
+    days_of_trade += 1
+    transaction(buyer_seller_dictionary,incremental_price)
+
+while 0 in new_equilibrium_prices: 
+    new_equilibrium_prices.remove(0)
+
+new_equilibrium = new_equilibrium_prices[-1]
+print(f"Accurate equilibrium: {new_equilibrium}")
+
+
