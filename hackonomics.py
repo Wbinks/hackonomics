@@ -33,8 +33,8 @@ number_of_trades_today = 0
 new_equilibrium_prices = []
 local_buyer_prices = []
 local_seller_prices = []
-
 trades_completed = 0
+
 pygame.init()
 screen = pygame.display.set_mode((1920,1080))
 pygame.display.set_caption("supply and demand simulation")
@@ -92,9 +92,7 @@ product_font = get_font(30)
 title_font = get_font(100)
 button_font = get_font(50)
 bs_font = get_font(40)
-
 explanation_font = pygame.font.SysFont("Comic sans", 25, bold=True, italic=False)
-
 
 class Seller:
     def __init__(self,minimum_price,local_price):
@@ -107,6 +105,7 @@ for i in range(len(stall_rect)):
 
 class Buyer:
     def __init__(self, stall_rects, start_x, start_y, speed, maximum_price,local_price, stall_seller_map):
+        self.traded = False
         self.trade_attempted_stalls = set()
         self.stall_seller_map = stall_seller_map
         self.transaction_done = False
@@ -170,7 +169,7 @@ class Buyer:
                         stall_idx = self.stall_order[self.current_index]
                         seller = self.stall_seller_map.get(stall_idx)
     
-                        if seller and not seller.traded:
+                        if seller :
                             transaction({self: seller}, 5, True)  
                             print(f"Trade occurred at stall {stall_idx}")
 
@@ -324,9 +323,6 @@ def transaction(some_dictionary,increment, accurate_equilibrium):
     global number_of_trades_today
     global new_equilibrium_prices
     global trades_completed
-    
-    
-    
 
     for buyer, seller in some_dictionary.items():
 
@@ -357,7 +353,7 @@ def transaction(some_dictionary,increment, accurate_equilibrium):
     else:
         new_equilibrium = 0
     
-        new_equilibrium_prices.append(new_equilibrium)
+    new_equilibrium_prices.append(new_equilibrium)
 
     if not accurate_equilibrium:
         print("Number of trades:",number_of_trades_today)
@@ -401,13 +397,6 @@ def sim_display(now):
     elif smaller:
         screen.blit(lessBuyers_scaled,(1280,0))
         display_text(screen, smaller_text[now], (1280,600), explanation_font, "black",typing_index)
-
-
-
-
-
-
-
 
 
 
@@ -486,8 +475,6 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
     sellers = price_to_agent(2, min_prices_sellers, local_seller_prices)
     stall_seller_map = {i: sellers[i] for i in range(num_Of_Sellers)}
 
-    for seller in sellers:
-        seller.traded = False
 
     buyers = []
     for i in range(num_Of_Buyers):
@@ -534,8 +521,6 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
             if all_done:
                 simulation_done = True
 
-            for seller in sellers:
-                seller.traded = False
 
 
 
@@ -551,13 +536,10 @@ def simulation(num_Of_Sellers, num_Of_Buyers,type_of_product):
         eq_price_text = trades_font.render("Current Equilibrium Price: "+ str(new_equilibrium_prices[-1]),True,"brown")
         eq_price_text_rect = eq_price_text.get_rect(bottomright = (1150,100))
 
-        real_eq_text = trades_font.render("Actual Equilibrium Price: "+ str(equilibrium_price),True,"brown")
-        real_eq_text_rect = real_eq_text.get_rect(bottomright = (1150,150))
-
 
         screen.blit(trades_completed_text,trades_completed_text_rect)
         screen.blit(eq_price_text,eq_price_text_rect)
-        screen.blit(real_eq_text,real_eq_text_rect)
+
         menu_button = Button(
             image= pygame.image.load("images/quit.png"), pos=(135, 50), text_input="Menu",
             font=button_font, base_color="#fcf935", hovering_color="white"
