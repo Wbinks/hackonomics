@@ -6,5 +6,5 @@ It simulates what happens to the price and quantity of an item in a market in re
 The interface is user friendly and allows them to input the amount of buyers/sellers they would like.
 
 
-   [![IMAGE_ALT_TEXT]()](https://youtu.be/Yo6XuDkQSbo) 
+   [![Link to Demo]()](https://youtu.be/Yo6XuDkQSbo) 
 
