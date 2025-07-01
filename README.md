@@ -8,3 +8,4 @@ The interface is user friendly and allows them to input the amount of buyers/sel
 
    [![Link to Demo]()](https://youtu.be/Yo6XuDkQSbo) 
 
+Skip to 3:24 to see the visual simulation (my part)
